@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cihuuy|| post & watch/read</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: sans-serif; background-color: #f0f2f5; padding: 20px; margin: 0; }
+    .container { width: 95%; max-width: 500px; margin: 0 auto; }
+    input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .post-container { margin-top: 20px; padding: 15px; border-radius: 12px; background-color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .post-container img, .post-container video { max-width: 100%; border-radius: 8px; margin-top: 10px; }
+    .comment-box { background: #f8f9fa; padding: 8px; margin-top: 5px; border-radius: 6px; font-size: 13px; border-left: 3px solid #007bff; }
+    .btn-action { width: auto; padding: 6px 12px; font-size: 13px; margin-right: 5px; }
+    .btn-delete { background-color: #ff4d4d; }
+    .btn-comment { background-color: #28a745; width: auto; }
+    #auth-section, #post-section, #setting-section { display: none; }
+    #ben { position: relative; width: 360px; display: block; margin: 0 auto; left: -20px; top: -20px; }
+    @media (orientation: landscape) { #ben { width: 750px; height: 200px; object-fit: cover; } }
+    .pfp-mini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1px solid #ddd; }
+    .post-header { display: flex; align-items: center; margin-bottom: 10px; }
+    .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+    .pfp-large { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; margin: 10px auto; border: 2px solid #007bff; }
+  </style>
+</head>
+<header>
+  <img src="banner.png" id="ben" />
+</header>
+<body>
+
+  <div class="container" id="auth-section">
+    <div id="login-form">
+      <input type="text" id="login-username" placeholder="Username" />
+      <input type="password" id="login-password" placeholder="Password" />
+      <button onclick="handleLogin()">Login</button>
+      <p onclick="toggleAuth(true)" style="color:#007bff; cursor:pointer">Daftar Akun Baru</p>
+    </div>
+    <div id="register-form" style="display:none;">
+      <input type="text" id="reg-username" placeholder="Username Baru" />
+      <input type="password" id="reg-password" placeholder="Password" />
+      <button onclick="handleRegister()">Buat Akun</button>
+      <p onclick="toggleAuth(false)" style="color:#007bff; cursor:pointer">Kembali</p>
+    </div>
+  </div>
+
+  <div class="container" id="post-section">
+    <div class="nav-bar">
+      <h3 id="welcome-msg" style="margin:0; flex-grow:1"></h3>
+      <button onclick="showSection('setting-section')" style="background:#17a2b8; width:auto">⚙️ Settings</button>
+      <button onclick="handleLogout()" style="background:#6c757d; width:auto">Logout</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*, video/*" />
+    <textarea id="postText" placeholder="Apa yang ingin kamu bagikan?"></textarea>
+    <button onclick="handlePost()">Posting</button>
+    <div id="posts"></div>
+  </div>
+
+  <div class="container" id="setting-section">
+    <button onclick="showSection('post-section')" style="background:#6c757d; width:auto; margin-bottom:15px">← Kembali</button>
+    <div class="post-container" style="text-align:center">
+      <h3>Account Settings</h3>
+      <img id="current-pfp-display" src="default.png" class="pfp-large">
+      <input type="file" id="pfpInput" accept="image/*" />
+      <button onclick="savePFP()" style="margin-bottom:8px">Simpan PFP</button>
+      <button onclick="resetPFP()" style="background:#ffc107; color:black">Gunakan Default PFP</button>
+    </div>
+  </div>
+
+<script>
+  const SUPABASE_URL = 'https://dtsloktbdwjnyhjcnuix.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0c2xva3RiZHdqbnloamNudWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzg1NjQsImV4cCI6MjA5MDYxNDU2NH0.B_5l7F2jxWZvelmkqKeIcMzB_fH6ZUXw4LH0llzu5Ws';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
+  const CURRENT_WEB = 'p';
+
+  let userSession = null;
+  let selectedFileObject = null;
+  let userPFP = localStorage.getItem('userPFP') || 'default.png';
+
+  function showSection(id) {
+    document.getElementById('post-section').style.display = 'none';
+    document.getElementById('setting-section').style.display = 'none';
+    document.getElementById('auth-section').style.display = 'none';
+    document.getElementById(id).style.display = 'block';
+    if(id === 'setting-section') document.getElementById('current-pfp-display').src = userPFP;
+  }
+
+  function toggleAuth(isReg) {
+    document.getElementById('login-form').style.display = isReg ? 'none' : 'block';
+    document.getElementById('register-form').style.display = isReg ? 'block' : 'none';
+  }
+
+  async function handleRegister() {
+    const user = document.getElementById('reg-username').value;
+    const pass = document.getElementById('reg-password').value;
+    const { error } = await db.auth.signUp({ email: user + "@app.com", password: pass });
+    if (error) alert(error.message); else alert("Berhasil mendaftar!");
+  }
+
+  async function handleLogin() {
+    const user = document.getElementById('login-username').value;
+    const pass = document.getElementById('login-password').value;
+    const { error } = await db.auth.signInWithPassword({ email: user + "@app.com", password: pass });
+    if (error) alert(error.message); else checkSession();
+  }
+
+  async function handleLogout() { await db.auth.signOut(); location.reload(); }
+
+  document.getElementById('fileInput').onchange = (e) => { selectedFileObject = e.target.files[0]; };
+
+  document.getElementById('pfpInput').onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => { document.getElementById('current-pfp-display').src = ev.target.result; };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  async function savePFP() {
+    const newSrc = document.getElementById('current-pfp-display').src;
+    userPFP = newSrc;
+    localStorage.setItem('userPFP', newSrc);
+    const myId = userSession.id;
+    await db.from('posts').update({ pfp: newSrc }).eq('user_id', myId);
+    alert("Profil diperbarui!");
+    renderPosts();
+  }
+
+  function resetPFP() {
+    userPFP = 'default.png';
+    localStorage.setItem('userPFP', 'default.png');
+    document.getElementById('current-pfp-display').src = 'default.png';
+    renderPosts();
+  }
+
+  async function uploadToStorage(file, bucket) {
+    const fileName = `${Date.now()}_${file.name}`;
+    const { error } = await db.storage.from(bucket).upload(fileName, file);
+    if (error) throw error;
+    const { data: { publicUrl } } = db.storage.from(bucket).getPublicUrl(fileName);
+    return publicUrl;
+  }
+
+  async function handlePost() {
+    const text = document.getElementById('postText').value;
+    if (!text && !selectedFileObject) return;
+    let fileUrl = null;
+    const myName = userSession.email.split('@')[0];
+    if (selectedFileObject) {
+      try { fileUrl = await uploadToStorage(selectedFileObject, 'files'); } 
+      catch (err) { alert(err.message); return; }
+    }
+    const { error } = await db.from('posts').insert([
+      { text, image: fileUrl, username: myName, user_id: userSession.id, pfp: userPFP, target_web: CURRENT_WEB }
+    ]);
+    if (error) alert(error.message); else {
+      document.getElementById('postText').value = '';
+      document.getElementById('fileInput').value = '';
+      selectedFileObject = null;
+      renderPosts();
+    }
+  }
+
+  async function handleUpdateComment(postId) {
+    const input = document.getElementById(`in-cmnt-${postId}`);
+    const val = input.value.trim();
+    if (!val) return;
+    const myName = userSession.email.split('@')[0];
+    const { data: post } = await db.from('posts').select('comments').eq('id', postId).single();
+    const updated = [...(post.comments || []), `<b>${myName}</b>: ${val}`];
+    await db.from('posts').update({ comments: updated }).eq('id', postId);
+    input.value = '';
+    renderPosts();
+  }
+
+  async function handleToggleLike(id) {
+    const myName = userSession.email.split('@')[0];
+    const { data: post } = await db.from('posts').select('likes, likedBy').eq('id', id).single();
+    let list = post.likedBy || [];
+    let lks = post.likes || 0;
+    if (list.includes(myName)) { list = list.filter(u => u !== myName); lks--; }
+    else { list.push(myName); lks++; }
+    await db.from('posts').update({ likes: lks, likedBy: list }).eq('id', id);
+    renderPosts();
+  }
+
+  async function handleDeletePost(id) {
+    if (confirm("Hapus postingan?")) { await db.from('posts').delete().eq('id', id); renderPosts(); }
+  }
+
+  async function handleBanUser(userId, targetName) {
+    if (confirm(`Hapus semua postingan @${targetName}?`)) {
+      await db.from('posts').delete().eq('user_id', userId);
+      renderPosts();
+    }
+  }
+
+  async function renderPosts() {
+    const { data: posts } = await db.from('posts')
+      .select('*')
+      .eq('target_web', CURRENT_WEB)
+      .order('created_at', { ascending: false });
+    const container = document.getElementById('posts');
+    container.innerHTML = '';
+    if (posts) {
+      posts.forEach(p => {
+        const myName = userSession ? userSession.email.split('@')[0] : '';
+        const isAdmin = (myName === "admin67");
+        const canDelete = (userSession && p.user_id === userSession.id) || isAdmin;
+        const hasLiked = (p.likedBy || []).includes(myName);
+        const isVideo = p.image && (p.image.includes('.mp4') || p.image.includes('.webm'));
+        const mediaTag = isVideo ? `<video src="${p.image}" controls></video>` : (p.image ? `<img src="${p.image}">` : '');
+        const div = document.createElement('div');
+        div.className = 'post-container';
+        div.innerHTML = `
+          <div class="post-header"><img src="${p.pfp || 'default.png'}" class="pfp-mini"><strong>@${p.username}</strong></div>
+          <p>${p.text}</p>${mediaTag}
+          <div>
+            <button class="btn-action" onclick="handleToggleLike('${p.id}')">${hasLiked ? '❤️' : '🤍'} ${p.likes || 0}</button>
+            ${canDelete ? `<button class="btn-action btn-delete" onclick="handleDeletePost('${p.id}')">🗑️ Hapus</button>` : ''}
+            ${isAdmin && p.username !== 'admin67' ? `<button class="btn-action" style="background:black; color:white;" onclick="handleBanUser('${p.user_id}', '${p.username}')">🚫 BAN</button>` : ''}
+          </div>
+          <div style="margin-top:10px">
+            <input type="text" id="in-cmnt-${p.id}" placeholder="tulis komentar..." style="width:70%; padding:5px">
+            <button class="btn-comment" onclick="handleUpdateComment('${p.id}')">Kirim</button>
+            <div style="margin-top:5px">${(p.comments || []).map(c => `<div class="comment-box">${c}</div>`).join('')}</div>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+  }
+
+  async function checkSession() {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      userSession = session.user;
+      showSection('post-section');
+      document.getElementById('welcome-msg').innerText = "@" + userSession.email.split('@')[0];
+      renderPosts();
+    } else { showSection('auth-section'); }
+  }
+  checkSession();
+</script>
+</body>
+  </html>
+  
