@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cihuuy|| post & watch/read</title>
+  <title>Cihuuuuuy Public</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: sans-serif; background-color: #f0f2f5; padding: 20px; margin: 0; }
@@ -25,60 +25,59 @@
     .pfp-large { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; margin: 10px auto; border: 2px solid #007bff; }
   </style>
 </head>
+<body>
 <header>
   <img src="banner.png" id="ben" />
 </header>
-<body>
-
   <div class="container" id="auth-section">
-    <div id="login-form">
-      <input type="text" id="login-username" placeholder="Username" />
-      <input type="password" id="login-password" placeholder="Password" />
-      <button onclick="handleLogin()">Login</button>
-      <p onclick="toggleAuth(true)" style="color:#007bff; cursor:pointer">Daftar Akun Baru</p>
-    </div>
-    <div id="register-form" style="display:none;">
-      <input type="text" id="reg-username" placeholder="Username Baru" />
-      <input type="password" id="reg-password" placeholder="Password" />
-      <button onclick="handleRegister()">Buat Akun</button>
-      <p onclick="toggleAuth(false)" style="color:#007bff; cursor:pointer">Kembali</p>
-    </div>
+<div id="login-form">
+  <input type="text" id="login-username" placeholder="Username" />
+  <input type="password" id="login-password" placeholder="Password" />
+  <div style="text-align: left; font-size: 14px; margin-bottom: 10px;">
+    <input type="checkbox" onclick="togglePasswordVisibility('login-password')" style="width: auto; margin-right: 5px;"> view password 
   </div>
-
+  <button onclick="handleLogin()">Log in</button>
+  <p onclick="toggleAuth(true)" style="color:#007bff; cursor:pointer">Sign up</p>
+</div>
+<div id="register-form" style="display:none;">
+  <input type="text" id="reg-username" placeholder="Username" />
+  <input type="password" id="reg-password" placeholder="Password" />
+  <div style="text-align: left; font-size: 14px; margin-bottom: 10px;">
+    <input type="checkbox" onclick="togglePasswordVisibility('reg-password')" style="width: auto; margin-right: 5px;"> View password
+  </div>
+  <button onclick="handleRegister()">Create account</button>
+  <p onclick="toggleAuth(false)" style="color:#007bff; cursor:pointer">Back</p>
+</div>
+</div>
   <div class="container" id="post-section">
     <div class="nav-bar">
       <h3 id="welcome-msg" style="margin:0; flex-grow:1"></h3>
       <button onclick="showSection('setting-section')" style="background:#17a2b8; width:auto">⚙️ Settings</button>
-      <button onclick="handleLogout()" style="background:#6c757d; width:auto">Logout</button>
+      <button onclick="handleLogout()" style="background:#6c757d; width:auto">Log out</button>
     </div>
     <input type="file" id="fileInput" accept="image/*, video/*" />
-    <textarea id="postText" placeholder="Apa yang ingin kamu bagikan?"></textarea>
-    <button onclick="handlePost()">Posting</button>
+    <textarea id="postText" placeholder="What's on your mind?"></textarea>
+    <button onclick="handlePost()">Post</button>
     <div id="posts"></div>
   </div>
-
   <div class="container" id="setting-section">
-    <button onclick="showSection('post-section')" style="background:#6c757d; width:auto; margin-bottom:15px">← Kembali</button>
+    <button onclick="showSection('post-section')" style="background:#6c757d; width:auto; margin-bottom:15px">← back</button>
     <div class="post-container" style="text-align:center">
       <h3>Account Settings</h3>
       <img id="current-pfp-display" src="default.png" class="pfp-large">
       <input type="file" id="pfpInput" accept="image/*" />
-      <button onclick="savePFP()" style="margin-bottom:8px">Simpan PFP</button>
-      <button onclick="resetPFP()" style="background:#ffc107; color:black">Gunakan Default PFP</button>
+      <button onclick="savePFP()" style="margin-bottom:8px">Save PFP</button>
+      <button onclick="resetPFP()" style="background:#ffc107; color:black">Use Default PFP</button>
     </div>
   </div>
-
 <script>
   const SUPABASE_URL = 'https://dtsloktbdwjnyhjcnuix.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0c2xva3RiZHdqbnloamNudWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzg1NjQsImV4cCI6MjA5MDYxNDU2NH0.B_5l7F2jxWZvelmkqKeIcMzB_fH6ZUXw4LH0llzu5Ws';
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  
   const CURRENT_WEB = 'p';
-
   let userSession = null;
   let selectedFileObject = null;
   let userPFP = localStorage.getItem('userPFP') || 'default.png';
-
   function showSection(id) {
     document.getElementById('post-section').style.display = 'none';
     document.getElementById('setting-section').style.display = 'none';
@@ -86,30 +85,24 @@
     document.getElementById(id).style.display = 'block';
     if(id === 'setting-section') document.getElementById('current-pfp-display').src = userPFP;
   }
-
   function toggleAuth(isReg) {
     document.getElementById('login-form').style.display = isReg ? 'none' : 'block';
     document.getElementById('register-form').style.display = isReg ? 'block' : 'none';
   }
-
   async function handleRegister() {
     const user = document.getElementById('reg-username').value;
     const pass = document.getElementById('reg-password').value;
     const { error } = await db.auth.signUp({ email: user + "@app.com", password: pass });
     if (error) alert(error.message); else alert("Berhasil mendaftar!");
   }
-
   async function handleLogin() {
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
     const { error } = await db.auth.signInWithPassword({ email: user + "@app.com", password: pass });
     if (error) alert(error.message); else checkSession();
   }
-
   async function handleLogout() { await db.auth.signOut(); location.reload(); }
-
   document.getElementById('fileInput').onchange = (e) => { selectedFileObject = e.target.files[0]; };
-
   document.getElementById('pfpInput').onchange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -118,7 +111,6 @@
       reader.readAsDataURL(file);
     }
   };
-
   async function savePFP() {
     const newSrc = document.getElementById('current-pfp-display').src;
     userPFP = newSrc;
@@ -128,14 +120,12 @@
     alert("Profil diperbarui!");
     renderPosts();
   }
-
   function resetPFP() {
     userPFP = 'default.png';
     localStorage.setItem('userPFP', 'default.png');
     document.getElementById('current-pfp-display').src = 'default.png';
     renderPosts();
   }
-
   async function uploadToStorage(file, bucket) {
     const fileName = `${Date.now()}_${file.name}`;
     const { error } = await db.storage.from(bucket).upload(fileName, file);
@@ -143,7 +133,6 @@
     const { data: { publicUrl } } = db.storage.from(bucket).getPublicUrl(fileName);
     return publicUrl;
   }
-
   async function handlePost() {
     const text = document.getElementById('postText').value;
     if (!text && !selectedFileObject) return;
@@ -163,7 +152,6 @@
       renderPosts();
     }
   }
-
   async function handleUpdateComment(postId) {
     const input = document.getElementById(`in-cmnt-${postId}`);
     const val = input.value.trim();
@@ -175,7 +163,6 @@
     input.value = '';
     renderPosts();
   }
-
   async function handleToggleLike(id) {
     const myName = userSession.email.split('@')[0];
     const { data: post } = await db.from('posts').select('likes, likedBy').eq('id', id).single();
@@ -186,18 +173,15 @@
     await db.from('posts').update({ likes: lks, likedBy: list }).eq('id', id);
     renderPosts();
   }
-
   async function handleDeletePost(id) {
-    if (confirm("Hapus postingan?")) { await db.from('posts').delete().eq('id', id); renderPosts(); }
+    if (confirm("Delete post?")) { await db.from('posts').delete().eq('id', id); renderPosts(); }
   }
-
   async function handleBanUser(userId, targetName) {
-    if (confirm(`Hapus semua postingan @${targetName}?`)) {
+    if (confirm(`Delete all posts @${targetName}?`)) {
       await db.from('posts').delete().eq('user_id', userId);
       renderPosts();
     }
   }
-
   async function renderPosts() {
     const { data: posts } = await db.from('posts')
       .select('*')
@@ -218,21 +202,22 @@
         div.innerHTML = `
           <div class="post-header"><img src="${p.pfp || 'default.png'}" class="pfp-mini"><strong>@${p.username}</strong></div>
           <p>${p.text}</p>${mediaTag}
-          <div>
+                 <div>
             <button class="btn-action" onclick="handleToggleLike('${p.id}')">${hasLiked ? '❤️' : '🤍'} ${p.likes || 0}</button>
             ${canDelete ? `<button class="btn-action btn-delete" onclick="handleDeletePost('${p.id}')">🗑️ Hapus</button>` : ''}
+            <!-- Tombol Edit: Hanya muncul jika akun tersebut adalah admin67 -->
+            ${isAdmin ? `<button class="btn-action" style="background:#ffc107; color:black; border:none;" onclick="handleEditPost('${p.id}')">✏️ Edit</button>` : ''}
             ${isAdmin && p.username !== 'admin67' ? `<button class="btn-action" style="background:black; color:white;" onclick="handleBanUser('${p.user_id}', '${p.username}')">🚫 BAN</button>` : ''}
           </div>
           <div style="margin-top:10px">
-            <input type="text" id="in-cmnt-${p.id}" placeholder="tulis komentar..." style="width:70%; padding:5px">
-            <button class="btn-comment" onclick="handleUpdateComment('${p.id}')">Kirim</button>
+            <input type="text" id="in-cmnt-${p.id}" placeholder="comment here don't be shy..." style="width:70%; padding:5px">
+            <button class="btn-comment" onclick="handleUpdateComment('${p.id}')">Post</button>
             <div style="margin-top:5px">${(p.comments || []).map(c => `<div class="comment-box">${c}</div>`).join('')}</div>
           </div>`;
         container.appendChild(div);
       });
     }
   }
-
   async function checkSession() {
     const { data: { session } } = await db.auth.getSession();
     if (session) {
@@ -243,7 +228,30 @@
     } else { showSection('auth-section'); }
   }
   checkSession();
+  function togglePasswordVisibility(inputId) {
+  const passwordInput = document.getElementById(inputId);
+  if (passwordInput.type === "password") {
+    passwordInput.type = "text";
+  } else {
+    passwordInput.type = "password";
+  }
+}
+  async function handleEditPost(id) {
+    const { data: post, error: fetchError } = await db.from('posts').select('text').eq('id', id).single();
+    if (fetchError || !post) {
+      alert("Gagal mengambil data post!");
+      return;
+    }
+    const newText = prompt("Edit tulisan postingan ini:", post.text);
+    if (newText !== null && newText.trim() !== "") {
+      const { error } = await db.from('posts').update({ text: newText }).eq('id', id);
+      if (error) {
+        alert(error.message);
+      } else {
+        renderPosts(); 
+      }
+    }
+  }
 </script>
 </body>
-  </html>
-  
+</html>
