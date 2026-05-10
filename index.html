@@ -92,8 +92,21 @@
   async function handleRegister() {
     const user = document.getElementById('reg-username').value;
     const pass = document.getElementById('reg-password').value;
-    const { error } = await db.auth.signUp({ email: user + "@app.com", password: pass });
-    if (error) alert(error.message); else alert("Berhasil mendaftar!");
+    const { data, error } = await db.auth.signUp({ 
+      email: user + "@app.com", 
+      password: pass 
+    });
+    if (error) {
+      alert(error.message);
+    } else {
+      if (data.session) {
+        userSession = data.session.user;
+        alert("Akun berhasil dibuat dan otomatis masuk!");
+        checkSession(); 
+        } else {
+        alert("Account created! Please check your confirmation email or toggle 'Confirm Email' OFF in your Supabase Dashboard to log in immediately..");
+      }
+    }
   }
   async function handleLogin() {
     const user = document.getElementById('login-username').value;
@@ -205,7 +218,7 @@
                  <div>
             <button class="btn-action" onclick="handleToggleLike('${p.id}')">${hasLiked ? '❤️' : '🤍'} ${p.likes || 0}</button>
             ${canDelete ? `<button class="btn-action btn-delete" onclick="handleDeletePost('${p.id}')">🗑️ Hapus</button>` : ''}
-            <!-- Tombol Edit: Hanya muncul jika akun tersebut adalah admin67 -->
+           
             ${isAdmin ? `<button class="btn-action" style="background:#ffc107; color:black; border:none;" onclick="handleEditPost('${p.id}')">✏️ Edit</button>` : ''}
             ${isAdmin && p.username !== 'admin67' ? `<button class="btn-action" style="background:black; color:white;" onclick="handleBanUser('${p.user_id}', '${p.username}')">🚫 BAN</button>` : ''}
           </div>
@@ -219,13 +232,21 @@
     }
   }
   async function checkSession() {
-    const { data: { session } } = await db.auth.getSession();
-    if (session) {
-      userSession = session.user;
-      showSection('post-section');
-      document.getElementById('welcome-msg').innerText = "@" + userSession.email.split('@')[0];
-      renderPosts();
-    } else { showSection('auth-section'); }
+    try {
+      const { data: { session }, error } = await db.auth.getSession();
+      if (error) throw error;
+      if (session && session.user) {
+        userSession = session.user;
+        document.getElementById('welcome-msg').innerText = "@" + userSession.email.split('@')[0];
+        showSection('post-section'); 
+        renderPosts(); 
+      } else {
+        showSection('auth-section'); 
+      }
+    } catch (err) {
+      console.error("Session Error:", err);
+      showSection('auth-section');
+    }
   }
   checkSession();
   function togglePasswordVisibility(inputId) {
@@ -242,7 +263,7 @@
       alert("Gagal mengambil data post!");
       return;
     }
-    const newText = prompt("Edit tulisan postingan ini:", post.text);
+    const newText = prompt("Edit the text of this post:", post.text);
     if (newText !== null && newText.trim() !== "") {
       const { error } = await db.from('posts').update({ text: newText }).eq('id', id);
       if (error) {
