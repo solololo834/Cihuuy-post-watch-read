@@ -17,18 +17,32 @@
     .btn-delete { background-color: #ff4d4d; }
     .btn-comment { background-color: #28a745; width: auto; }
     #auth-section, #post-section, #setting-section { display: none; }
-    #ben { position: relative; width: 360px; display: block; margin: 0 auto; left: -20px; top: -20px; }
+    #ben { position: relative;
+    width: 360px;
+    display: block;
+    margin: 0 auto;
+    left: -20px;
+    top: -50px; 
+      margin-top: 30px;
+    }
     @media (orientation: landscape) { #ben { width: 750px; height: 200px; object-fit: cover; } }
     .pfp-mini { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px; border: 1px solid #ddd; }
     .post-header { display: flex; align-items: center; margin-bottom: 10px; }
     .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; }
     .pfp-large { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: block; margin: 10px auto; border: 2px solid #007bff; }
+    #len {
+      position: relative;
+      top: -70px;
+      font-size: 30px;
+    }
   </style>
 </head>
 <body>
 <header>
   <img src="banner.png" id="ben" />
 </header>
+  <h2 id="len"hidden>🔎</h2>
+
   <div class="container" id="auth-section">
 <div id="login-form">
   <input type="text" id="login-username" placeholder="Username" />
@@ -40,7 +54,7 @@
   <p onclick="toggleAuth(true)" style="color:#007bff; cursor:pointer">Sign up</p>
 </div>
 <div id="register-form" style="display:none;">
-  <input type="text" id="reg-username" placeholder="Username" />
+  <input type="text" id="reg-username" placeholder="Username"  />
   <input type="password" id="reg-password" placeholder="Password" />
   <div style="text-align: left; font-size: 14px; margin-bottom: 10px;">
     <input type="checkbox" onclick="togglePasswordVisibility('reg-password')" style="width: auto; margin-right: 5px;"> View password
@@ -52,14 +66,30 @@
   <div class="container" id="post-section">
     <div class="nav-bar">
       <h3 id="welcome-msg" style="margin:0; flex-grow:1"></h3>
-      <button onclick="showSection('setting-section')" style="background:#17a2b8; width:auto">⚙️ Settings</button>
-      <button onclick="handleLogout()" style="background:#6c757d; width:auto">Log out</button>
+      <button onclick="showSection('setting-section')" style="background:#17a2b8; width: 40px; position: relative; left: 100px; top: -130px;">⚙️ </button>
+      <button onclick="handleLogout()" style="background:#6c757d; width: 160px; left: 100px; position: relative; font-size: 12px; height: 80px; top: -40px;">Log-out</button>
+<button onclick="toggleSwitchModal()" style="background:#6f42c1;
+ width: auto; top: -130px; 
+ left: 20px; position: relative;"; >🔄 Switch Account</button>
+
+<div id="switch-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000;">
+  <div class="post-container" style="max-width:300px; margin: 100px auto;">
+    <h3>Switch Account</h3>
+    <div id="account-list"></div>
+    <hr>
+    <button onclick="addNewAccount()" style="background:#28a745;">+ Add New Account</button>
+    <button onclick="toggleSwitchModal()" style="background:#6c757d; margin-top:5px;">Close</button>
+  </div>
+</div>
+
+     
     </div>
     <input type="file" id="fileInput" accept="image/*, video/*" />
     <textarea id="postText" placeholder="What's on your mind?"></textarea>
     <button onclick="handlePost()">Post</button>
     <div id="posts"></div>
   </div>
+
   <div class="container" id="setting-section">
     <button onclick="showSection('post-section')" style="background:#6c757d; width:auto; margin-bottom:15px">← back</button>
     <div class="post-container" style="text-align:center">
@@ -68,8 +98,18 @@
       <input type="file" id="pfpInput" accept="image/*" />
       <button onclick="savePFP()" style="margin-bottom:8px">Save PFP</button>
       <button onclick="resetPFP()" style="background:#ffc107; color:black">Use Default PFP</button>
-    </div>
+      <h2>Banner (BETA)</h2> 
+      <input type="checkbox" id="bann" checked/>
   </div>
+  </div>
+    <div class="container" id="profile-section" style="display:none;">
+    <button onclick="showSection('post-section')" style="background:#6c757d; width:auto; margin-bottom:15px">‹</button>
+  
+    <div class="post-container" style="text-align:center; margin-bottom: 20px;">
+      <img id="view-pfp" src="default.png" class="pfp-large">
+      <h2 id="view-username" style="margin-top: -10px;"></h2>
+    </div>
+    <div id="user-posts"></div>
 <script>
   const SUPABASE_URL = 'https://dtsloktbdwjnyhjcnuix.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0c2xva3RiZHdqbnloamNudWl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzg1NjQsImV4cCI6MjA5MDYxNDU2NH0.B_5l7F2jxWZvelmkqKeIcMzB_fH6ZUXw4LH0llzu5Ws';
@@ -78,12 +118,36 @@
   let userSession = null;
   let selectedFileObject = null;
   let userPFP = localStorage.getItem('userPFP') || 'default.png';
-  function showSection(id) {
+    function showSection(id) {
     document.getElementById('post-section').style.display = 'none';
     document.getElementById('setting-section').style.display = 'none';
     document.getElementById('auth-section').style.display = 'none';
+    document.getElementById('profile-section').style.display = 'none'; 
     document.getElementById(id).style.display = 'block';
     if(id === 'setting-section') document.getElementById('current-pfp-display').src = userPFP;
+  }
+  async function viewUserProfile(userId, username, pfp) {
+    showSection('profile-section');
+    document.getElementById('view-username').innerText = "@" + username;
+    document.getElementById('view-pfp').src = pfp || 'default.png';
+    const { data: posts } = await db.from('posts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    const container = document.getElementById('user-posts');
+    container.innerHTML = '';
+    if (posts && posts.length > 0) {
+      posts.forEach(p => {
+        const isVideo = p.image && (p.image.includes('.mp4') || p.image.includes('.webm'));
+        const mediaTag = isVideo ? `<video src="${p.image}" controls></video>` : (p.image ? `<img src="${p.image}">` : '');
+        const div = document.createElement('div');
+        div.className = 'post-container';
+        div.innerHTML = `<p>${p.text}</p>${mediaTag}<br><small>${new Date(p.created_at).toLocaleDateString()}</small>`;
+        container.appendChild(div);
+      });
+    } else {
+      container.innerHTML = '<p style="text-align:center; color:grey;">No posts yet.</p>';
+    }
   }
   function toggleAuth(isReg) {
     document.getElementById('login-form').style.display = isReg ? 'none' : 'block';
@@ -101,7 +165,9 @@
     } else {
       if (data.session) {
         userSession = data.session.user;
-        alert("Akun berhasil dibuat dan otomatis masuk!");
+        document.getElementById('welcome-msg').innerText = "@" + userSession.email.split('@')[0];
+updateSavedAccounts(); 
+        alert("Account created successfully");
         checkSession(); 
         } else {
         alert("Account created! Please check your confirmation email or toggle 'Confirm Email' OFF in your Supabase Dashboard to log in immediately..");
@@ -111,9 +177,14 @@
   async function handleLogin() {
     const user = document.getElementById('login-username').value;
     const pass = document.getElementById('login-password').value;
-    const { error } = await db.auth.signInWithPassword({ email: user + "@app.com", password: pass });
-    if (error) alert(error.message); else checkSession();
-  }
+    const { data, error } = await db.auth.signInWithPassword({ email: user + "@app.com", password: pass });
+    if (error) {
+        alert(error.message);
+    } else {
+        await updateSavedAccounts();         checkSession();
+    }
+}
+
   async function handleLogout() { await db.auth.signOut(); location.reload(); }
   document.getElementById('fileInput').onchange = (e) => { selectedFileObject = e.target.files[0]; };
   document.getElementById('pfpInput').onchange = (e) => {
@@ -130,7 +201,7 @@
     localStorage.setItem('userPFP', newSrc);
     const myId = userSession.id;
     await db.from('posts').update({ pfp: newSrc }).eq('user_id', myId);
-    alert("Profil diperbarui!");
+    alert("Profile updated!");
     renderPosts();
   }
   function resetPFP() {
@@ -205,21 +276,26 @@
     if (posts) {
       posts.forEach(p => {
         const myName = userSession ? userSession.email.split('@')[0] : '';
-        const isAdmin = (myName === "admin67");
-        const canDelete = (userSession && p.user_id === userSession.id) || isAdmin;
+const isAdmin = (myName === "admin67");
+const isOwner = (userSession && p.user_id === userSession.id); 
+const canEdit = isOwner || isAdmin; 
+        const canDelete = isOwner || isAdmin;
         const hasLiked = (p.likedBy || []).includes(myName);
         const isVideo = p.image && (p.image.includes('.mp4') || p.image.includes('.webm'));
         const mediaTag = isVideo ? `<video src="${p.image}" controls></video>` : (p.image ? `<img src="${p.image}">` : '');
         const div = document.createElement('div');
         div.className = 'post-container';
-        div.innerHTML = `
-          <div class="post-header"><img src="${p.pfp || 'default.png'}" class="pfp-mini"><strong>@${p.username}</strong></div>
+div.innerHTML = `
+  <div class="post-header" onclick="viewUserProfile('${p.user_id}', '${p.username}', '${p.pfp}')" style="cursor:pointer">
+    <img src="${p.pfp || 'default.png'}" class="pfp-mini">
+    <strong>@${p.username}</strong>
+  </div>
           <p>${p.text}</p>${mediaTag}
                  <div>
             <button class="btn-action" onclick="handleToggleLike('${p.id}')">${hasLiked ? '❤️' : '🤍'} ${p.likes || 0}</button>
-            ${canDelete ? `<button class="btn-action btn-delete" onclick="handleDeletePost('${p.id}')">🗑️ Hapus</button>` : ''}
-           
-            ${isAdmin ? `<button class="btn-action" style="background:#ffc107; color:black; border:none;" onclick="handleEditPost('${p.id}')">✏️ Edit</button>` : ''}
+            ${canDelete ? `<button class="btn-action btn-delete" onclick="handleDeletePost('${p.id}')">🗑️Delete </button>` : ''}
+            ${canEdit ? `<button class="btn-action" style="background:#ffc107; color:black; border:none;" onclick="handleEditPost('${p.id}')">✏️ Edit</button>` : ''}
+
             ${isAdmin && p.username !== 'admin67' ? `<button class="btn-action" style="background:black; color:white;" onclick="handleBanUser('${p.user_id}', '${p.username}')">🚫 BAN</button>` : ''}
           </div>
           <div style="margin-top:10px">
@@ -257,22 +333,147 @@
     passwordInput.type = "password";
   }
 }
-  async function handleEditPost(id) {
-    const { data: post, error: fetchError } = await db.from('posts').select('text').eq('id', id).single();
-    if (fetchError || !post) {
-      alert("Gagal mengambil data post!");
-      return;
-    }
-    const newText = prompt("Edit the text of this post:", post.text);
-    if (newText !== null && newText.trim() !== "") {
-      const { error } = await db.from('posts').update({ text: newText }).eq('id', id);
-      if (error) {
-        alert(error.message);
-      } else {
-        renderPosts(); 
+async function handleEditPost(id) {
+  const { data: post, error: fetchError } = await db.from('posts').select('text, user_id').eq('id', id).single();
+  
+  if (fetchError || !post) {
+    alert("Failed to fetch post data!");
+    return;
+  }
+
+  const myName = userSession.email.split('@')[0];
+  if (post.user_id !== userSession.id && myName !== "admin67") {
+    alert("You do not have permission to edit this post!");
+    return;
+  }
+
+  const newText = prompt("Edit this post:", post.text);
+  if (newText !== null && newText.trim() !== "") {
+    const { error } = await db.from('posts').update({ text: newText }).eq('id', id);
+    if (error) {
+      alert(error.message);
+    } else {
+      renderPosts(); 
+      if(document.getElementById('profile-section').style.display === 'block') {
+          const viewName = document.getElementById('view-username').innerText.replace('@', '');
+          const viewPfp = document.getElementById('view-pfp').src;
+          viewUserProfile(post.user_id, viewName, viewPfp);
       }
     }
   }
+}
+
+let savedAccounts = JSON.parse(localStorage.getItem('savedAccounts')) || [];
+
+function toggleSwitchModal() {
+    const modal = document.getElementById('switch-modal');
+    modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+    if(modal.style.display === 'block') renderAccountList();
+}
+
+async function updateSavedAccounts() {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) return;
+
+    const userData = {
+        id: session.user.id,
+        email: session.user.email,
+        username: session.user.email.split('@')[0],
+        refresh_token: session.refresh_token,
+        pfp: userPFP
+    };
+
+    const index = savedAccounts.findIndex(acc => acc.id === userData.id);
+    if (index > -1) {
+        savedAccounts[index] = userData;
+    } else {
+        savedAccounts.push(userData);
+    }
+    
+    localStorage.setItem('savedAccounts', JSON.stringify(savedAccounts));
+}
+
+function renderAccountList() {
+    const listDiv = document.getElementById('account-list');
+    listDiv.innerHTML = '';
+    
+    savedAccounts.forEach((acc, index) => {
+        const isCurrent = userSession && acc.id === userSession.id;
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.style = "display:flex; align-items:center; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; margin-bottom:5px; border-radius:8px;";
+        if(isCurrent) itemDiv.style.background = "#e7f3ff";
+
+        const infoDiv = document.createElement('div');
+        infoDiv.style = "display:flex; align-items:center; flex-grow:1; cursor:pointer;";
+        infoDiv.innerHTML = `
+            <img src="${acc.pfp || 'default.png'}" style="width:30px; height:30px; border-radius:50%; margin-right:10px; object-fit:cover;">
+            <span style="font-weight:bold; font-size:14px;">${acc.username} ${isCurrent ? '<small>(Active)</small>' : ''}</span>
+        `;
+        
+        if(!isCurrent) {
+            infoDiv.onclick = () => switchAccount(acc.refresh_token);
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = "✕";
+        deleteBtn.style = "background:#ff4d4d; color:white; border:none; border-radius:4px; padding: 2px; cursor:pointer; margin-left: -10px; font-size:12px; width: 50px;";
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();             removeAccountFromList(acc.id);
+        };
+
+        itemDiv.appendChild(infoDiv);
+        itemDiv.appendChild(deleteBtn);
+        listDiv.appendChild(itemDiv);
+    });
+}
+
+
+async function switchAccount(refreshToken) {
+    const { data, error } = await db.auth.refreshSession({ refresh_token: refreshToken });
+    if (error) {
+        alert("Session expired, please login again.");
+        savedAccounts = savedAccounts.filter(acc => acc.refresh_token !== refreshToken);
+        localStorage.setItem('savedAccounts', JSON.stringify(savedAccounts));
+    } else {
+        location.reload();     }
+}
+
+function addNewAccount() {
+    updateSavedAccounts();
+    showSection('auth-section');
+    toggleSwitchModal();
+}
+
+async function removeAccountFromList(userId) {
+    if (!confirm("Remove this account from the device list?")) return;
+
+    const accountToDelete = savedAccounts.find(acc => acc.id === userId);
+    savedAccounts = savedAccounts.filter(acc => acc.id !== userId);
+    localStorage.setItem('savedAccounts', JSON.stringify(savedAccounts));
+
+    if (userSession && userId === userSession.id) {
+        await db.auth.signOut();
+        location.reload(); 
+    } else {
+        renderAccountList();    }
+}
+
+const bannCheckbox = document.getElementById("bann");
+const bannerImg = document.getElementById("ben");
+
+function updateBannerVisibility() {
+    if (bannCheckbox.checked) {
+        bannerImg.style.display = "block";
+    } else {
+        bannerImg.style.display = "none";
+    }
+}
+
+bannCheckbox.addEventListener("change", updateBannerVisibility);
+
+updateBannerVisibility();
+
 </script>
 </body>
 </html>
